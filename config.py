@@ -13,7 +13,7 @@ config = { "iter" : 2000,
 
            "alpha" : 10,
            "lambda_grad" : 0.1,
-           "lr_g" : 0.00005,
+           "lr_g" : 0.0005,
            "lr_d" : 0.0005,
            "beta1" : 0.5,
            "Dsteps" : 3,
