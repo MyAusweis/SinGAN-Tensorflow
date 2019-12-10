@@ -1,6 +1,6 @@
 config = { "iter" : 2000,
            "scale_factor" : 0.75,
-           "min_size" : 25,
+           "min_size" : 13,
            "max_size" : 250,
 
            "nfc" : 32,
@@ -13,8 +13,8 @@ config = { "iter" : 2000,
 
            "alpha" : 10,
            "lambda_grad" : 0.1,
-           "lr_g" : 0.0005,
-           "lr_d" : 0.0005,
+           "lr_g" : 0.0001,
+           "lr_d" : 0.001,
            "beta1" : 0.5,
            "Dsteps" : 3,
            "Gsteps" : 3

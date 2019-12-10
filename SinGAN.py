@@ -9,7 +9,7 @@ class SinGAN:
     def __init__(self, config, training_image, model):
         self.config = config
         self.full_image = training_image/127.5 -1
-
+        self.name = model
         self.save_path = "Trained_models/" + model
 
         if not os.path.exists(self.save_path):
@@ -19,6 +19,56 @@ class SinGAN:
         self.graph = tf.Graph()
         self.__get_real_sizes()
         self.__build_graphs()
+
+
+    def random_samples(self, scale = 0):
+        with tf.Session(graph = self.graph) as sess:
+
+            """
+            Check if saved model exists
+
+            """
+
+            tf.global_variables_initializer().run()
+            try:
+                self.saver.restore(sess, self.save_path + "/model/model.ckpt")
+
+            except:
+                print("Error: Saved model not found")
+                return
+
+
+            """
+            Check if random samples exists
+
+            """
+
+            save_path = "Output/RandomSamples/" + self.name + "/scale_" + str(scale)
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+
+
+            """
+            Initialize input
+
+            """
+
+            NUM_SAMPLES = 50
+
+            for j in range(NUM_SAMPLES):
+                if scale == 0:
+                    input = np.random.normal(0, self.config["noise_amp"], size = (1, self.real_pyramid[0].shape[0], self.real_pyramid[0].shape[1], self.config["nc_im"] ))
+                else:
+                    input = np.expand_dims(self.real_pyramid[scale], axis = 0)
+                prev = input
+                for i in range(scale, self.num_scales):
+
+                    feed_dict = {self.random_samples_placeholders[i] : prev}
+                    gen = sess.run(self.gen_random_samples[i], feed_dict = feed_dict)
+                    if i < self.num_scales:
+                        prev = np.expand_dims(cv2.resize(gen[0,:,:,:],  (self.real_pyramid[i+1].shape[1], self.real_pyramid[i+1].shape[0])), axis = 0)
+                self.__save_image(prev, save_path + "/sample_" + str(j) + ".png")
+
 
     def train(self):
         with tf.Session(graph = self.graph) as sess:
@@ -101,7 +151,7 @@ class SinGAN:
                 self.generated_images.append(generation)
 
                 if i != self.num_scales:
-                    prev = tf.image.resize(generation, (self.real_pyramid[i+1].shape[0], self.real_pyramid[i+1].shape[1]))
+                    prev = tf.image.resize(self.tf_reals[i], (self.real_pyramid[i+1].shape[0], self.real_pyramid[i+1].shape[1]))
                     prev = prev + self.config["noise_amp"]*tf.random.normal(shape = tf.shape(prev))
 
 
@@ -199,12 +249,29 @@ class SinGAN:
                 self.discriminator_train_ops.append(discriminator_optimizer.minimize(self.discriminator_loss[i], var_list = var_list))
 
             """
+            Random Samples
+
+            """
+
+            self.random_samples_placeholders = []
+            self.gen_random_samples = []
+
+            for i in range(self.num_scales):
+                self.random_samples_placeholders.append(tf.placeholder(shape = (1, self.real_pyramid[i].shape[0], self.real_pyramid[i].shape[1], self.config["nc_im"] ),  dtype = tf.float32, name = "gen_input_" + str(i)))
+
+            for i in range(self.num_scales):
+                x = self.random_samples_placeholders[i] + self.config["noise_amp"]*tf.random.normal(shape = tf.shape(self.random_samples_placeholders[i]))
+                gen = models.generator(x, x, self.config, name = "scale_" + str(i))
+                self.gen_random_samples.append(gen)
+
+            """
             Utils
 
             """
             self.saver = tf.train.Saver()
 
             print("Done")
+
 
     def __get_vars(self, str):
         return tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = str)
