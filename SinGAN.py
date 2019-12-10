@@ -147,7 +147,7 @@ class SinGAN:
             prev = self.config["noise_amp"]*first_noise
 
             for i in range(self.num_scales + 1):
-                generation = models.generator(prev, prev, self.config, name = "scale_" + str(i))
+                generation = self.__generate(prev, scale = i)
                 self.generated_images.append(generation)
 
                 if i != self.num_scales:
@@ -272,6 +272,11 @@ class SinGAN:
 
             print("Done")
 
+    def __generate(self, input, scale):
+        pad_size = int(self.config["ker_size"]*self.config["num_layer"]*0.5)
+        paddings = tf.constant([[0, 0], [pad_size, pad_size ], [pad_size, pad_size], [0, 0]])
+        x = tf.pad(input, paddings, "CONSTANT")
+        return models.generator(x, input, self.config, name = "scale_" + str(scale))
 
     def __get_vars(self, str):
         return tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = str)

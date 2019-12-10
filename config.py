@@ -1,6 +1,6 @@
 config = { "iter" : 2000,
            "scale_factor" : 0.75,
-           "min_size" : 13,
+           "min_size" : 25,
            "max_size" : 250,
 
            "nfc" : 32,
